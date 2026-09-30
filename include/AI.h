@@ -14,9 +14,9 @@ private:
     AIStrategy strategy;
     
     // Strategie di scelta
-    int selectCardRandom(const Card& topCard);
-    int selectCardAggressive(const Card& topCard);
-    int selectCardSmart(const Card& topCard);
+    int selectCardRandom(const Card& topCard, CardColor currentColor = CardColor::RED);
+    int selectCardAggressive(const Card& topCard, CardColor currentColor = CardColor::RED);
+    int selectCardSmart(const Card& topCard, CardColor currentColor = CardColor::RED);
     
     // Utility per strategie
     bool hasWildCard() const;
@@ -29,6 +29,7 @@ public:
     
     // Override metodi virtuali
     int chooseCard(const Card& topCard) override;
+    int chooseCard(const Card& topCard, CardColor currentColor);
     CardColor chooseWildColor() const override;
     
     // Getters

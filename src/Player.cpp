@@ -143,10 +143,10 @@ void Player::resetStats() {
     gamesLost = 0;
 }
 
-bool Player::canPlayCard(const Card& topCard) {
+bool Player::canPlayCard(const Card& topCard, CardColor currentColor) {
     try {
         for (int i = 0; i < handSize; i++) {
-            if (hand[i] != nullptr && hand[i]->canPlayOn(topCard)) {
+            if (hand[i] != nullptr && hand[i]->canPlayOn(topCard, currentColor)) {
                 return true;
             }
         }
@@ -156,7 +156,7 @@ bool Player::canPlayCard(const Card& topCard) {
     }
 }
 
-int* Player::getValidCardIndices(const Card& topCard, int& count) {
+int* Player::getValidCardIndices(const Card& topCard, int& count, CardColor currentColor) {
     try {
         int* validIndices = new int[handSize];
         if (!validIndices) {
@@ -165,7 +165,7 @@ int* Player::getValidCardIndices(const Card& topCard, int& count) {
         
         count = 0;
         for (int i = 0; i < handSize; i++) {
-            if (hand[i] != nullptr && hand[i]->canPlayOn(topCard)) {
+            if (hand[i] != nullptr && hand[i]->canPlayOn(topCard, currentColor)) {
                 validIndices[count++] = i;
             }
         }
@@ -177,7 +177,13 @@ int* Player::getValidCardIndices(const Card& topCard, int& count) {
 }
 
 int Player::chooseCard(const Card& topCard) {
-    // Default implementation - può essere overridden da AI
+    (void)topCard;
+    return -1;
+}
+
+int Player::chooseCard(const Card& topCard, CardColor currentColor) {
+    (void)topCard;
+    (void)currentColor;
     return -1;
 }
 

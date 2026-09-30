@@ -34,15 +34,21 @@ bool Card::isNumber() const {
     return type >= CardType::NUMBER_0 && type <= CardType::NUMBER_9;
 }
 
+//fix: wildcard non cambiava il colore corrente di gioco, faceva pescare sempre
+
 bool Card::canPlayOn(const Card& topCard) const {
+    return canPlayOn(topCard, topCard.isWild() ? CardColor::RED : topCard.color);
+}
+
+bool Card::canPlayOn(const Card& topCard, CardColor currentColor) const {
     // Carte Wild si possono sempre giocare
     if (isWild()) {
         return true;
     }
     
-    // Se la carta in cima è Wild, puoi giocare qualsiasi carta dello stesso colore
+    // Se la carta in cima è Wild, il gioco continua col colore scelto
     if (topCard.isWild()) {
-        return this->color == topCard.color;
+        return this->color == currentColor;
     }
     
     // Stesso colore
@@ -64,11 +70,17 @@ bool Card::canPlayOn(const Card& topCard) const {
 }
 
 std::string Card::toString() const {
+    return toString(color);
+}
+
+std::string Card::toString(CardColor displayColor) const {
     std::string colorStr;
     std::string typeStr;
     
-    // Colore
-    switch (color) {
+    // Colore da mostrare: se la carta è wild, mostriamo il colore attivo scelto
+    CardColor effectiveColor = isWild() && displayColor != CardColor::WILD ? displayColor : color;
+    
+    switch (effectiveColor) {
         case CardColor::RED: colorStr = "RED"; break;
         case CardColor::YELLOW: colorStr = "YELLOW"; break;
         case CardColor::GREEN: colorStr = "GREEN"; break;

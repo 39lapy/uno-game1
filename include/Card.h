@@ -46,12 +46,14 @@ public:
     
     // Utility
     std::string toString() const;
+    std::string toString(CardColor displayColor) const;
     bool isWild() const;
     bool isSpecial() const;
     bool isNumber() const;
     
     // Validazione: controlla se questa carta puo' essere giocata su un'altra
     bool canPlayOn(const Card& topCard) const;
+    bool canPlayOn(const Card& topCard, CardColor currentColor) const;
 };
 
 #endif // CARD_H

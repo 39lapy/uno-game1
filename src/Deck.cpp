@@ -244,7 +244,4 @@ void Deck::printDeckInfo() const {
     std::cout << "Deck Info:" << std::endl;
     std::cout << "  Cards remaining: " << getRemainingCards() << std::endl;
     std::cout << "  Discard pile: " << getDiscardPileSize() << std::endl;
-    if (discardCount > 0 && getTopCard() != nullptr) {
-        std::cout << "  Top card: " << getTopCard()->toString() << std::endl;
-    }
 }

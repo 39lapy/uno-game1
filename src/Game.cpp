@@ -5,7 +5,7 @@
 #include <cstring>
 
 Game::Game()
-    : currentPlayerIndex(0), gameActive(false), reverseDirection(false), playersCount(0) {
+    : currentPlayerIndex(0), gameActive(false), reverseDirection(false), currentColor(CardColor::RED), pendingSkipTurns(0), playersCount(0) {
     try {
         deck = new Deck();
         if (!deck) {
@@ -84,6 +84,7 @@ void Game::initializeGame(int numAIPlayers) {
         Card* topCard = deck->drawCard();
         if (topCard) {
             deck->discardCard(topCard);
+            currentColor = topCard->isWild() ? CardColor::RED : topCard->getColor();
         }
         
         gameActive = true;
@@ -182,13 +183,14 @@ bool Game::humanPlayerTurn() {
         
         std::cout << "\n" << std::string(50, '-') << std::endl;
         std::cout << "Your turn, " << player->getName() << "!" << std::endl;
-        std::cout << "Top card: " << topCard->toString() << std::endl;
+        std::cout << "Top card: " << topCard->toString(currentColor) << std::endl;
+        std::cout << "Current color: " << Utils::colorToString(currentColor) << std::endl;
         std::cout << std::string(50, '-') << std::endl;
         
         player->printHand();
         
         int validCount = 0;
-        int* validIndices = player->getValidCardIndices(*topCard, validCount);
+        int* validIndices = player->getValidCardIndices(*topCard, validCount, currentColor);
         
         if (validCount == 0) {
             std::cout << "\nNo valid cards. Drawing a card..." << std::endl;
@@ -200,6 +202,7 @@ bool Game::humanPlayerTurn() {
             
             delete[] validIndices;
             Utils::pauseExecution();
+            system("cls"); //keep it clean :P
             return false;  // Turno terminato
         }
         
@@ -219,13 +222,19 @@ bool Game::humanPlayerTurn() {
             std::cout << "Invalid card! You must play a valid card." << std::endl;
             delete[] validIndices;
             Utils::pauseExecution();
+            system("cls"); //keep it clean :P
             return humanPlayerTurn();  // Riprova
         }
         
         Card* playedCard = player->playCard(cardIndex);
         deck->discardCard(playedCard);
+
+        if (!playedCard->isWild()) {
+            currentColor = playedCard->getColor();
+        }
         
-        std::cout << "\nPlayed: " << playedCard->toString() << std::endl;
+        std::string playedLabel = playedCard->isWild() ? "WILD" : playedCard->toString(currentColor);
+        std::cout << "\nPlayed: " << playedLabel << std::endl;
         
         // Gestisci carte speciali
         if (playedCard->getType() == CardType::SKIP) {
@@ -247,6 +256,7 @@ bool Game::humanPlayerTurn() {
         }
         
         Utils::pauseExecution();
+        system("cls"); //keep it clean :P
         return false;
     } catch (const std::exception& e) {
         std::cerr << "Error in humanPlayerTurn: " << e.what() << std::endl;
@@ -267,14 +277,19 @@ void Game::aiPlayerTurn() {
         }
         
         std::cout << "\n" << player->getName() << "'s turn..." << std::endl;
-        
+
+        //fix: i turni ai vengono eseguiti tutti contemporaneamente, ora ogni turno pausa
+        Utils::pauseExecution(); 
+
+        system("cls"); //keep it clean :P
+
         // Converti il giocatore a AI
         AI* aiPlayer = dynamic_cast<AI*>(player);
         if (!aiPlayer) {
             throw GameException("Failed to cast player to AI");
         }
         
-        int cardIndex = aiPlayer->chooseCard(*topCard);
+        int cardIndex = aiPlayer->chooseCard(*topCard, currentColor);
         
         if (cardIndex == -1) {
             // Nessuna carta valida, pesca
@@ -286,8 +301,13 @@ void Game::aiPlayerTurn() {
         } else {
             Card* playedCard = aiPlayer->playCard(cardIndex);
             deck->discardCard(playedCard);
+
+            if (!playedCard->isWild()) {
+                currentColor = playedCard->getColor();
+            }
             
-            std::cout << aiPlayer->getName() << " played: " << playedCard->toString() << std::endl;
+            std::string playedLabel = playedCard->isWild() ? "WILD" : playedCard->toString(currentColor);
+            std::cout << aiPlayer->getName() << " played: " << playedLabel << std::endl;
             
             // Gestisci carte speciali
             if (playedCard->getType() == CardType::SKIP) {
@@ -311,20 +331,27 @@ void Game::aiPlayerTurn() {
     }
 }
 
-void Game::handleSkip() {
+void Game::handleSkip() { //fix: logica skip causava doppio skip
     std::cout << "SKIP! Next player's turn is skipped." << std::endl;
-    nextTurn();
+    pendingSkipTurns++;
 }
 
 void Game::handleReverse() {
     std::cout << "REVERSE! Direction changed." << std::endl;
     reverseDirection = !reverseDirection;
+
+    //aggiunta regola skip 2 giocatori
+    if (playersCount == 2) {
+        std::cout << "Two-player rule: REVERSE acts like SKIP." << std::endl;
+        pendingSkipTurns++;
+    }
 }
 
 void Game::handleDrawTwo() {
     std::cout << "DRAW_TWO! Next player draws 2 cards." << std::endl;
-    nextTurn();
-    Player* nextPlayer = getCurrentPlayer();
+
+    int targetIndex = getNextPlayerIndex();
+    Player* nextPlayer = (targetIndex >= 0 && targetIndex < playersCount && players != nullptr) ? players[targetIndex] : nullptr;
     if (nextPlayer) {
         for (int i = 0; i < 2; i++) {
             Card* card = deck->drawCard();
@@ -333,24 +360,29 @@ void Game::handleDrawTwo() {
             }
         }
     }
+
+    //fix: cambiata skip logic x evitare il bug del doppio skip trovato in handleSkip()
+    pendingSkipTurns++;
 }
 
 void Game::handleWild(Player* player) {
     try {
         std::cout << "WILD card! Player chooses a color." << std::endl;
         
+        CardColor chosenColor = CardColor::RED;
         if (player->getIsAI()) {
             AI* aiPlayer = dynamic_cast<AI*>(player);
             if (aiPlayer) {
-                CardColor chosenColor = aiPlayer->chooseWildColor();
+                chosenColor = aiPlayer->chooseWildColor();
                 std::cout << aiPlayer->getName() << " chose: " << Utils::colorToString(chosenColor) << std::endl;
             }
         } else {
             std::cout << "Choose a color (0=RED, 1=YELLOW, 2=GREEN, 3=BLUE): ";
             int colorChoice = Utils::getIntInput(0, 3);
-            CardColor chosenColor = static_cast<CardColor>(colorChoice);
+            chosenColor = static_cast<CardColor>(colorChoice);
             std::cout << "You chose: " << Utils::colorToString(chosenColor) << std::endl;
         }
+        currentColor = chosenColor;
     } catch (const std::exception& e) {
         std::cerr << "Error in handleWild: " << e.what() << std::endl;
     }
@@ -360,21 +392,23 @@ void Game::handleWildDrawFour(Player* player) {
     try {
         std::cout << "WILD_DRAW_FOUR! Player chooses a color and next player draws 4 cards." << std::endl;
         
+        CardColor chosenColor = CardColor::RED;
         if (player->getIsAI()) {
             AI* aiPlayer = dynamic_cast<AI*>(player);
             if (aiPlayer) {
-                CardColor chosenColor = aiPlayer->chooseWildColor();
+                chosenColor = aiPlayer->chooseWildColor();
                 std::cout << aiPlayer->getName() << " chose: " << Utils::colorToString(chosenColor) << std::endl;
             }
         } else {
             std::cout << "Choose a color (0=RED, 1=YELLOW, 2=GREEN, 3=BLUE): ";
             int colorChoice = Utils::getIntInput(0, 3);
-            CardColor chosenColor = static_cast<CardColor>(colorChoice);
+            chosenColor = static_cast<CardColor>(colorChoice);
             std::cout << "You chose: " << Utils::colorToString(chosenColor) << std::endl;
         }
-        
-        nextTurn();
-        Player* nextPlayer = getCurrentPlayer();
+        currentColor = chosenColor;
+
+        int targetIndex = getNextPlayerIndex();
+        Player* nextPlayer = (targetIndex >= 0 && targetIndex < playersCount && players != nullptr) ? players[targetIndex] : nullptr;
         if (nextPlayer) {
             for (int i = 0; i < 4; i++) {
                 Card* card = deck->drawCard();
@@ -383,6 +417,9 @@ void Game::handleWildDrawFour(Player* player) {
                 }
             }
         }
+
+        //fix: cambiata skip logic x evitare il bug del doppio skip trovato in handleSkip()
+        pendingSkipTurns++;
     } catch (const std::exception& e) {
         std::cerr << "Error in handleWildDrawFour: " << e.what() << std::endl;
     }
@@ -441,6 +478,11 @@ void Game::playGame() {
             if (currentPlayer->getHandSize() == 1) {
                 std::cout << "\n*** " << currentPlayer->getName() << " says UNO! ***" << std::endl;
             }
+
+            if (pendingSkipTurns > 0) {
+                nextTurn();
+                pendingSkipTurns--;
+            }
             
             nextTurn();
         }
@@ -462,6 +504,14 @@ void Game::playGame() {
 
 bool Game::isGameActive() const {
     return gameActive;
+}
+
+CardColor Game::getCurrentColor() const {
+    return currentColor;
+}
+
+void Game::setCurrentColor(CardColor color) {
+    currentColor = color;
 }
 
 Player* Game::getWinner() const {

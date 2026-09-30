@@ -20,6 +20,8 @@ private:
     int currentPlayerIndex;
     bool gameActive;
     bool reverseDirection;
+    CardColor currentColor;
+    int pendingSkipTurns;
     std::string savedGamePath;
     
     // Gestione turni
@@ -59,6 +61,8 @@ public:
     // Controllo stato
     bool isGameActive() const;
     Player* getWinner() const;
+    CardColor getCurrentColor() const;
+    void setCurrentColor(CardColor color);
     
     // Persistenza
     bool saveGame(const std::string& filename);

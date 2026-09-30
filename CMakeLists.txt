@@ -12,6 +12,7 @@ set(SOURCES
     src/Player.cpp
     src/Game.cpp
     src/AI.cpp
+    src/Utils.cpp
 )
 
 # Header files

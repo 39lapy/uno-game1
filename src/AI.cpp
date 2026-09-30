@@ -9,10 +9,10 @@ AI::AI(const std::string& name, int id, AIStrategy strategy)
 
 AI::~AI() {}
 
-int AI::selectCardRandom(const Card& topCard) {
+int AI::selectCardRandom(const Card& topCard, CardColor currentColor) {
     try {
         int validCount = 0;
-        int* validIndices = getValidCardIndices(topCard, validCount);
+        int* validIndices = getValidCardIndices(topCard, validCount, currentColor);
         
         if (validCount == 0) {
             delete[] validIndices;
@@ -29,10 +29,10 @@ int AI::selectCardRandom(const Card& topCard) {
     }
 }
 
-int AI::selectCardAggressive(const Card& topCard) {
+int AI::selectCardAggressive(const Card& topCard, CardColor currentColor) {
     try {
         int validCount = 0;
-        int* validIndices = getValidCardIndices(topCard, validCount);
+        int* validIndices = getValidCardIndices(topCard, validCount, currentColor);
         
         if (validCount == 0) {
             delete[] validIndices;
@@ -59,10 +59,10 @@ int AI::selectCardAggressive(const Card& topCard) {
     }
 }
 
-int AI::selectCardSmart(const Card& topCard) {
+int AI::selectCardSmart(const Card& topCard, CardColor currentColor) {
     try {
         int validCount = 0;
-        int* validIndices = getValidCardIndices(topCard, validCount);
+        int* validIndices = getValidCardIndices(topCard, validCount, currentColor);
         
         if (validCount == 0) {
             delete[] validIndices;
@@ -81,13 +81,13 @@ int AI::selectCardSmart(const Card& topCard) {
         }
         
         // Priorità 2: Mantieni la diversità di colori
-        CardColor topColor = topCard.getColor();
+        CardColor preferredColor = topCard.isWild() ? currentColor : topCard.getColor();
         int* sameColorIndices = new int[validCount];
         int sameColorCount = 0;
         
         for (int i = 0; i < validCount; i++) {
             int idx = validIndices[i];
-            if (getHand()[idx]->getColor() == topColor) {
+            if (getHand()[idx]->getColor() == preferredColor) {
                 sameColorIndices[sameColorCount++] = idx;
             }
         }
@@ -152,16 +152,20 @@ CardColor AI::getMostFrequentColor() const {
 }
 
 int AI::chooseCard(const Card& topCard) {
+    return chooseCard(topCard, topCard.isWild() ? CardColor::RED : topCard.getColor());
+}
+
+int AI::chooseCard(const Card& topCard, CardColor currentColor) {
     try {
         switch (strategy) {
             case AIStrategy::RANDOM:
-                return selectCardRandom(topCard);
+                return selectCardRandom(topCard, currentColor);
             case AIStrategy::AGGRESSIVE:
-                return selectCardAggressive(topCard);
+                return selectCardAggressive(topCard, currentColor);
             case AIStrategy::SMART:
-                return selectCardSmart(topCard);
+                return selectCardSmart(topCard, currentColor);
             default:
-                return selectCardRandom(topCard);
+                return selectCardRandom(topCard, currentColor);
         }
     } catch (const std::exception& e) {
         std::cerr << "Error in AI::chooseCard: " << e.what() << std::endl;

@@ -50,11 +50,12 @@ public:
     void resetStats();
     
     // Validazione
-    bool canPlayCard(const Card& topCard);
-    int* getValidCardIndices(const Card& topCard, int& count);
+    bool canPlayCard(const Card& topCard, CardColor currentColor = CardColor::RED);
+    int* getValidCardIndices(const Card& topCard, int& count, CardColor currentColor = CardColor::RED);
     
     // Virtual per polimorfismo
     virtual int chooseCard(const Card& topCard);
+    virtual int chooseCard(const Card& topCard, CardColor currentColor);
     virtual CardColor chooseWildColor() const;
     
     // Debug
