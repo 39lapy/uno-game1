@@ -1,4 +1,5 @@
 #include "Card.h"
+#include "Utils.h"
 
 Card::Card(CardColor color, CardType type, int number)
     : color(color), type(type), number(number) {
@@ -102,5 +103,5 @@ std::string Card::toString(CardColor displayColor) const {
         }
     }
     
-    return colorStr + " " + typeStr;
+    return Utils::colorizeColorText(effectiveColor, colorStr) + " " + typeStr;
 }

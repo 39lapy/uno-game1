@@ -7,10 +7,45 @@
 #include <cstdlib>
 
 #ifdef _WIN32
+    #ifndef NOMINMAX
+    #define NOMINMAX
+    #endif
+    #include <windows.h>
+#endif
+
+#ifdef _WIN32
     #define CLEAR_SCREEN "cls"
 #else
     #define CLEAR_SCREEN "clear"
 #endif
+
+namespace {
+bool supportsAnsiColors() {
+#ifdef _WIN32
+    static const bool enabled = []() {
+        HANDLE outputHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+        DWORD consoleMode = 0;
+        return outputHandle != INVALID_HANDLE_VALUE && outputHandle != nullptr &&
+               GetConsoleMode(outputHandle, &consoleMode) &&
+               SetConsoleMode(outputHandle, consoleMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+    }();
+    return enabled;
+#else
+    return true;
+#endif
+}
+
+const char* ansiColorCode(CardColor color) {
+    switch (color) {
+        case CardColor::RED: return "\033[1;31m";
+        case CardColor::YELLOW: return "\033[1;33m";
+        case CardColor::GREEN: return "\033[1;32m";
+        case CardColor::BLUE: return "\033[1;34m";
+        case CardColor::WILD: return "\033[1;37m";
+        default: return "\033[0m";
+    }
+}
+}
 
 int Utils::getIntInput(int min, int max) {
     int input;
@@ -59,14 +94,23 @@ void Utils::pauseExecution() {
 }
 
 std::string Utils::colorToString(CardColor color) {
+    std::string colorName;
     switch (color) {
-        case CardColor::RED: return "RED";
-        case CardColor::YELLOW: return "YELLOW";
-        case CardColor::GREEN: return "GREEN";
-        case CardColor::BLUE: return "BLUE";
-        case CardColor::WILD: return "WILD";
-        default: return "UNKNOWN";
+        case CardColor::RED: colorName = "RED"; break;
+        case CardColor::YELLOW: colorName = "YELLOW"; break;
+        case CardColor::GREEN: colorName = "GREEN"; break;
+        case CardColor::BLUE: colorName = "BLUE"; break;
+        case CardColor::WILD: colorName = "WILD"; break;
+        default: colorName = "UNKNOWN"; break;
     }
+    return colorizeColorText(color, colorName);
+}
+
+std::string Utils::colorizeColorText(CardColor color, const std::string& text) {
+    if (!supportsAnsiColors()) {
+        return text;
+    }
+    return std::string(ansiColorCode(color)) + text + "\033[0m";
 }
 
 std::string Utils::typeToString(CardType type) {

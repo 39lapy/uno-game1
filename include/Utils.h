@@ -13,6 +13,7 @@ namespace Utils {
     
     // Conversione stringhe
     std::string colorToString(CardColor color);
+    std::string colorizeColorText(CardColor color, const std::string& text);
     std::string typeToString(CardType type);
     CardColor stringToColor(const std::string& str);
     

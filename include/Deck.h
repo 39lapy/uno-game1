@@ -33,6 +33,7 @@ public:
     
     // Operazioni sul mazzo
     Card* drawCard();          // Restituisce puntatore a carta
+    void returnCardToDeckAndShuffle(Card* card);
     void discardCard(Card* card);
     Card* getTopCard() const;
     void resetDeck();

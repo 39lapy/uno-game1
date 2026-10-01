@@ -80,15 +80,50 @@ void Game::initializeGame(int numAIPlayers) {
         // Distribuisci le carte iniziali
         distributeInitialCards();
         
-        // Pesca la prima carta dal discard pile
+        currentPlayerIndex = 0;
+        reverseDirection = false;
+        pendingSkipTurns = 0;
+
+        // Wild Draw Four cannot be the opening card under the classic rules.
         Card* topCard = deck->drawCard();
+        while (topCard && topCard->getType() == CardType::WILD_DRAW_FOUR) {
+            deck->returnCardToDeckAndShuffle(topCard);
+            topCard = deck->drawCard();
+        }
+
         if (topCard) {
             deck->discardCard(topCard);
             currentColor = topCard->isWild() ? CardColor::RED : topCard->getColor();
+
+            switch (topCard->getType()) {
+                case CardType::WILD:
+                    std::cout << "Opening WILD: ";
+                    handleWild(players[currentPlayerIndex]);
+                    break;
+                case CardType::SKIP:
+                    std::cout << "Opening SKIP: " << players[currentPlayerIndex]->getName() << " loses their turn." << std::endl;
+                    currentPlayerIndex = getNextPlayerIndex();
+                    break;
+                case CardType::REVERSE:
+                    std::cout << "Opening REVERSE: direction changed." << std::endl;
+                    reverseDirection = !reverseDirection;
+                    break;
+                case CardType::DRAW_TWO:
+                    std::cout << "Opening DRAW_TWO: " << players[currentPlayerIndex]->getName() << " draws 2 cards and loses their turn." << std::endl;
+                    for (int i = 0; i < 2; i++) {
+                        Card* card = deck->drawCard();
+                        if (card) {
+                            players[currentPlayerIndex]->addCard(card);
+                        }
+                    }
+                    currentPlayerIndex = getNextPlayerIndex();
+                    break;
+                default:
+                    break;
+            }
         }
-        
+
         gameActive = true;
-        currentPlayerIndex = 0;
         
         std::cout << "\nGame initialized with " << playersCount << " players!" << std::endl;
     } catch (const GameException& e) {
@@ -377,7 +412,10 @@ void Game::handleWild(Player* player) {
                 std::cout << aiPlayer->getName() << " chose: " << Utils::colorToString(chosenColor) << std::endl;
             }
         } else {
-            std::cout << "Choose a color (0=RED, 1=YELLOW, 2=GREEN, 3=BLUE): ";
+            std::cout << "Choose a color (0=" << Utils::colorToString(CardColor::RED)
+                      << ", 1=" << Utils::colorToString(CardColor::YELLOW)
+                      << ", 2=" << Utils::colorToString(CardColor::GREEN)
+                      << ", 3=" << Utils::colorToString(CardColor::BLUE) << "): ";
             int colorChoice = Utils::getIntInput(0, 3);
             chosenColor = static_cast<CardColor>(colorChoice);
             std::cout << "You chose: " << Utils::colorToString(chosenColor) << std::endl;
@@ -400,7 +438,10 @@ void Game::handleWildDrawFour(Player* player) {
                 std::cout << aiPlayer->getName() << " chose: " << Utils::colorToString(chosenColor) << std::endl;
             }
         } else {
-            std::cout << "Choose a color (0=RED, 1=YELLOW, 2=GREEN, 3=BLUE): ";
+            std::cout << "Choose a color (0=" << Utils::colorToString(CardColor::RED)
+                      << ", 1=" << Utils::colorToString(CardColor::YELLOW)
+                      << ", 2=" << Utils::colorToString(CardColor::GREEN)
+                      << ", 3=" << Utils::colorToString(CardColor::BLUE) << "): ";
             int colorChoice = Utils::getIntInput(0, 3);
             chosenColor = static_cast<CardColor>(colorChoice);
             std::cout << "You chose: " << Utils::colorToString(chosenColor) << std::endl;

@@ -188,6 +188,16 @@ Card* Deck::drawCard() {
     }
 }
 
+void Deck::returnCardToDeckAndShuffle(Card* card) {
+    if (card == nullptr) {
+        throw DeckException("Cannot return null card to deck");
+    }
+
+    resizeCardsArray();
+    cards[cardsCount++] = card;
+    shuffle();
+}
+
 void Deck::discardCard(Card* card) {
     try {
         if (card == nullptr) {
