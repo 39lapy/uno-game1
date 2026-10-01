@@ -1,0 +1,14 @@
+COMMENTI 
+
+(game.cpp 272) //fix: i turni ai vengono eseguiti tutti contemporaneamente, ora ogni turno pausa 
+
+(game.cpp 274) //keep it clean :P
+
+(card.cpp 37) //fix: wildcard non cambiava il colore corrente di gioco, faceva pescare sempre
+
+(game.cpp 332) //fix: logica skip causava doppio skip
+
+(game.cpp 341) //aggiunta regola skip 2 giocatori
+
+(game.cpp 419) //fix: cambiata skip logic x evitare il bug del doppio skip trovato in handleSkip()
+
